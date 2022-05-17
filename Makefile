@@ -43,7 +43,6 @@ mypy:
 
 ### Container commands ###
 dist-dev: ## Build docker container
-	pipenv requirements
 	docker build --platform linux/amd64 \
 		-t $(ECR_REGISTRY_DEV)/ppod-dev:latest \
 		-t $(ECR_REGISTRY_DEV)/ppod-dev:`git describe --always` \
