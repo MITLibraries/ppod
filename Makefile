@@ -17,7 +17,7 @@ update: install ## Update all Python dependencies
 
 ### Test commands ###
 test: ## Run tests and print a coverage report
-	pipenv run coverage run --source=. -m pytest
+	pipenv run coverage run --include=ppod.py -m pytest
 	pipenv run coverage report -m
 
 coveralls: test
