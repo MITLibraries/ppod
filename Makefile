@@ -17,7 +17,7 @@ update: install ## Update all Python dependencies
 
 ### Test commands ###
 test: ## Run tests and print a coverage report
-	pipenv run coverage run --source=lambdas -m pytest
+	pipenv run coverage run --source=. -m pytest
 	pipenv run coverage report -m
 
 coveralls: test
@@ -27,7 +27,7 @@ coveralls: test
 lint: bandit black flake8 isort mypy ## Lint the repo
 
 bandit:
-	pipenv run bandit -r lambdas
+	pipenv run bandit -r ppod.py
 
 black:
 	pipenv run black --check --diff .
@@ -39,7 +39,7 @@ isort:
 	pipenv run isort . --diff
 
 mypy:
-	pipenv run mypy lambdas
+	pipenv run mypy .
 
 ### Container commands ###
 dist-dev: ## Build docker container

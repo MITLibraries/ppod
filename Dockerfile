@@ -10,4 +10,4 @@ RUN pipenv requirements
 RUN pip3 install -r requirements.txt --target "${LAMBDA_TASK_ROOT}"
 
 # Default handler. See README for how to override to a different handler.
-CMD [ "lambdas.webhook.lambda_handler" ]
+CMD [ "ppod.lambda_handler" ]
