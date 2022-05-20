@@ -1,12 +1,11 @@
-import json
 import os
 
 import boto3
 import pytest
-from moto import mock_iam, mock_s3
+from moto import mock_s3
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="session")
 def aws_credentials():
     os.environ["AWS_ACCESS_KEY_ID"] = "testing"
     os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
@@ -14,94 +13,12 @@ def aws_credentials():
 
 
 @pytest.fixture()
-def aws_test_user(aws_credentials):
-    with mock_iam():
-        user_name = "test-user"
-        policy_document = {
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Effect": "Allow",
-                    "Action": ["s3:ListBucket", "sqs:GetQueueUrl"],
-                    "Resource": "*",
-                },
-                {
-                    "Effect": "Deny",
-                    "Action": [
-                        "dynamodb:PutItem",
-                        "dynamodb:Scan",
-                        "s3:GetObject",
-                        "ses:SendRawEmail",
-                        "sqs:ReceiveMessage",
-                        "sqs:SendMessage",
-                        "ssm:GetParameter",
-                    ],
-                    "Resource": "*",
-                },
-            ],
-        }
-        client = boto3.client("iam", region_name="us-east-1")
-        client.create_user(UserName=user_name)
-        client.put_user_policy(
-            UserName=user_name,
-            PolicyName="policy1",
-            PolicyDocument=json.dumps(policy_document),
-        )
-        yield client.create_access_key(UserName="test-user")["AccessKey"]
-
-
-@pytest.fixture()
-def get_request_matching_file():
-    request_data = {
-        "queryStringParameters": {
-            "bucket": "ppod",
-            "file_type": "tar.gz",
-            "key_prefix": "upload",
-        },
-        "requestContext": {
-            "http": {
-                "method": "GET",
-            },
-        },
-    }
+def request_data_matching_file():
+    request_data = {"filename-prefix": "upload/"}
     yield request_data
 
 
-@pytest.fixture()
-def get_request_no_files():
-    request_data = {
-        "queryStringParameters": {
-            "bucket": "no_files",
-            "file_type": "tar.gz",
-            "key_prefix": "no_files",
-        },
-        "requestContext": {
-            "http": {
-                "method": "GET",
-            },
-        },
-    }
-    yield request_data
-
-
-@pytest.fixture()
-def get_request_no_matching_file():
-    request_data = {
-        "queryStringParameters": {
-            "bucket": "ppod",
-            "file_type": "tar.gz",
-            "key_prefix": "download",
-        },
-        "requestContext": {
-            "http": {
-                "method": "GET",
-            },
-        },
-    }
-    yield request_data
-
-
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="session")
 def mocked_s3(aws_credentials):
     with mock_s3():
         s3 = boto3.client("s3", region_name="us-east-1")
@@ -112,6 +29,13 @@ def mocked_s3(aws_credentials):
             Key="upload/pod.tar.gz",
         )
         s3.create_bucket(Bucket="no_files")
+        s3.create_bucket(Bucket="a_lot_of_files")
+        for i in range(1001):
+            s3.put_object(
+                Body=open("fixtures/pod.tar.gz", "rb"),
+                Bucket="a_lot_of_files",
+                Key=f"upload/{i}.tar.gz",
+            )
         yield s3
 
 
