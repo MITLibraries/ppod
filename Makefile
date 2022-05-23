@@ -53,7 +53,7 @@ publish-dev: dist-dev ## Build, tag and push
 	docker push $(ECR_REGISTRY_DEV)/ppod-dev:latest
 	docker push $(ECR_REGISTRY_DEV)/ppod-dev:`git describe --always`
 
-update-format-lambda-dev: ## Updates the lambda with whatever is the most recent image in the ecr
+update-lambda-dev: ## Updates the lambda with whatever is the most recent image in the ecr
 	aws lambda update-function-code \
 		--function-name ppod-dev \
 		--image-uri $(shell aws sts get-caller-identity --query Account --output text).dkr.ecr.us-east-1.amazonaws.com/ppod-dev:latest

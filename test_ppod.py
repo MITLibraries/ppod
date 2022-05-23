@@ -26,7 +26,7 @@ def test_ppod_doesnt_configure_sentry_if_dsn_not_present(
     assert "Sentry DSN found" not in caplog.text
 
 
-def test_ppod_matching_files(monkeypatch, mocked_s3, request_data_matching_file):
+def test_ppod_matching_files(mocked_s3, request_data_matching_file):
     output = lambda_handler(request_data_matching_file, {})
     assert output == {"files-processed": 1}
 
@@ -39,7 +39,7 @@ def test_ppod_no_files_raises_exception(
         lambda_handler(request_data_matching_file, {})
 
 
-def test_ppod_no_matching_files_raises_exception(monkeypatch, mocked_s3):
+def test_ppod_no_matching_files_raises_exception(mocked_s3):
     request_data = {"filename-prefix": "download/"}
     with pytest.raises(KeyError):
         lambda_handler(request_data, {})

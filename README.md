@@ -24,6 +24,7 @@ make lint
 `WORKSPACE` = Set to `dev` for local development, this will be set to `stage` and `prod` in those environments by Terraform.
 
 ### To run locally
+NOTE: These instructions for running locally don't currently work and functionality has to be verified in our dev AWS account.
 - Build the container:
   ```bash
   docker build -t ppod .

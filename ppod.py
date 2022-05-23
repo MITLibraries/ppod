@@ -24,7 +24,7 @@ def lambda_handler(event: dict, context: object) -> dict:
         event["filename-prefix"],
     )
     for s3_file in s3_files:
-        logger.info(f"Processing file: {s3_file}")
+        logger.info("Processing file: %s", s3_file)
         s3_file_content = smart_open.open(f"s3://{bucket}/{s3_file}", "rb")
         files = extract_files_from_tar(s3_file_content)
         for file in files:
