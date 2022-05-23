@@ -32,14 +32,14 @@ def mocked_s3(aws_credentials):
         s3.create_bucket(Bucket="a_lot_of_files")
         for i in range(1001):
             s3.put_object(
-                Body=open("fixtures/pod.tar.gz", "rb"),
+                Body=str(i),
                 Bucket="a_lot_of_files",
-                Key=f"upload/{i}.tar.gz",
+                Key=f"upload/{i}.txt",
             )
         yield s3
 
 
 @pytest.fixture(autouse=True)
 def test_env():
-    os.environ = {"WORKSPACE": "test"}
+    os.environ = {"WORKSPACE": "test", "BUCKET": "ppod"}
     yield

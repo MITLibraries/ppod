@@ -42,9 +42,7 @@ def extract_files_from_tar(
             yield file
 
 
-def filter_files_in_bucket(
-    bucket: str, prefix: str = None
-) -> Generator[str, None, None]:
+def filter_files_in_bucket(bucket: str, prefix: str) -> Generator[str, None, None]:
     """Retrieve files in the specified bucket with the specified prefix."""
     s3_client = client("s3", region_name="us-east-1")
     paginator = s3_client.get_paginator("list_objects_v2")
