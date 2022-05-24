@@ -2,7 +2,12 @@ import logging
 
 import pytest
 
-from ppod import extract_files_from_tar, filter_files_in_bucket, lambda_handler
+from ppod import (
+    add_namespaces_to_alma_marcxml,
+    extract_files_from_tar,
+    filter_files_in_bucket,
+    lambda_handler,
+)
 
 
 def test_ppod_configures_sentry_if_dsn_present(
@@ -43,6 +48,11 @@ def test_ppod_no_matching_files_raises_exception(mocked_s3):
     request_data = {"filename-prefix": "download/"}
     with pytest.raises(KeyError):
         lambda_handler(request_data, {})
+
+
+def test_add_namespaces_to_alma_marcxml():
+    modified_xml = add_namespaces_to_alma_marcxml(open("fixtures/pod.xml", "rb"))
+    assert modified_xml == open("fixtures/pod_with_namespaces.xml", "r").read()
 
 
 def test_extract_files_from_tar():
