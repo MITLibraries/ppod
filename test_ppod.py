@@ -33,7 +33,7 @@ def test_ppod_doesnt_configure_sentry_if_dsn_not_present(
 
 def test_ppod_matching_files(mocked_s3, request_data_matching_file):
     output = lambda_handler(request_data_matching_file, {})
-    assert output == {"files-processed": 1}
+    assert output == {"files_processed": 1}
 
 
 def test_ppod_no_files_raises_exception(
@@ -44,6 +44,14 @@ def test_ppod_no_files_raises_exception(
         lambda_handler(request_data_matching_file, {})
 
 
+def test_ppod_empty_tar_raises_exception(
+    monkeypatch, mocked_s3, request_data_matching_file
+):
+    monkeypatch.setenv("BUCKET", "empty_tar")
+    with pytest.raises(ValueError):
+        lambda_handler(request_data_matching_file, {})
+
+
 def test_ppod_no_matching_files_raises_exception(mocked_s3):
     request_data = {"filename-prefix": "download/"}
     with pytest.raises(KeyError):
@@ -51,13 +59,19 @@ def test_ppod_no_matching_files_raises_exception(mocked_s3):
 
 
 def test_add_namespaces_to_alma_marcxml():
-    modified_xml = add_namespaces_to_alma_marcxml(open("fixtures/pod.xml", "rb"))
-    assert modified_xml == open("fixtures/pod_with_namespaces.xml", "r").read()
+    with open("fixtures/pod.xml", "rb") as pod_xml, open(
+        "fixtures/pod_with_namespaces.xml", "r"
+    ) as pod_xml_namespaces:
+        modified_xml = add_namespaces_to_alma_marcxml(pod_xml)
+        assert modified_xml.read() == pod_xml_namespaces.read()
 
 
 def test_extract_files_from_tar():
-    files = extract_files_from_tar(open("fixtures/pod.tar.gz", "rb"))
-    assert next(files).read() == open("fixtures/pod.xml", "rb").read()
+    with open("fixtures/pod.tar.gz", "rb") as pod_tar, open(
+        "fixtures/pod.xml", "rb"
+    ) as pod_xml:
+        files = extract_files_from_tar(pod_tar)
+        assert next(files).read() == pod_xml.read()
 
 
 def test_filter_files_in_bucket_with_1001_matching_file(mocked_s3):

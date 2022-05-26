@@ -1,6 +1,7 @@
 import logging
 import os
 import tarfile
+from io import StringIO
 from typing import IO, Generator, Optional
 
 import sentry_sdk
@@ -25,28 +26,34 @@ def lambda_handler(event: dict, context: object) -> dict:
     )
     for s3_file in s3_files:
         logger.info("Processing file: %s", s3_file)
-        s3_file_content = smart_open.open(f"s3://{bucket}/{s3_file}", "rb")
-        xml_files = extract_files_from_tar(s3_file_content)
-        for xml_file in xml_files:
-            if xml_file:
-                add_namespaces_to_alma_marcxml(xml_file)
-                # post modified_xml to POD
-                file_count += 1
-    return {"files-processed": file_count}
+        with smart_open.open(f"s3://{bucket}/{s3_file}", "rb") as s3_file_content:
+            xml_files = extract_files_from_tar(s3_file_content)
+            for xml_file in xml_files:
+                if xml_file:
+                    add_namespaces_to_alma_marcxml(xml_file)
+                    # post modified_xml to POD
+                    file_count += 1
+                else:
+                    raise ValueError(f"No files extracted from {s3_file}")
+    return {"files_processed": file_count}
 
 
-def add_namespaces_to_alma_marcxml(xml_file: IO[bytes]) -> str:
+def add_namespaces_to_alma_marcxml(xml_file: IO[bytes]) -> StringIO:
     collection_element_with_namespaces = (
-        "<collection xmlns='http://www.loc.gov/MARC21/slim' "
-        "xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' "
-        "xsi:schemaLocation='http://www.loc.gov/MARC21/slim "
-        "http://www.loc.gov/standards/marcxml/schema/MARC21slim.xsd'>\n"
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<collection xmlns="http://www.loc.gov/MARC21/slim" '
+        'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" '
+        'xsi:schemaLocation="http://www.loc.gov/MARC21/slim '
+        'http://www.loc.gov/standards/marcxml/schema/MARC21slim.xsd"><'
     )
-    return (
-        xml_file.read()
-        .decode("utf-8")
-        .replace("<collection>\n", collection_element_with_namespaces)
-    )
+    xml_string = StringIO()
+    xml_line = xml_file.read(52)
+    if xml_line == b'<?xml version="1.0" encoding="UTF-8"?>\n<collection><':
+        xml_string.write(collection_element_with_namespaces)
+        xml_file.seek(52)
+        xml_string.write(xml_file.read().decode("utf-8"))
+        xml_string.seek(0)
+    return xml_string
 
 
 def extract_files_from_tar(
