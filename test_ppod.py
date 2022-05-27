@@ -60,10 +60,15 @@ def test_ppod_no_matching_files_raises_exception(mocked_s3):
 
 def test_add_namespaces_to_alma_marcxml():
     with open("fixtures/pod.xml", "rb") as pod_xml, open(
-        "fixtures/pod_with_namespaces.xml", "r"
+        "fixtures/pod_with_namespaces.xml", "rb"
     ) as pod_xml_namespaces:
         modified_xml = add_namespaces_to_alma_marcxml(pod_xml)
         assert modified_xml.read() == pod_xml_namespaces.read()
+
+
+def test_add_namespaces_to_alma_marcxml_invalid_xml_raises_exception():
+    with pytest.raises(ValueError), open("fixtures/invalid.xml", "rb") as invalid_xml:
+        add_namespaces_to_alma_marcxml(invalid_xml)
 
 
 def test_extract_files_from_tar():

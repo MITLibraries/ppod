@@ -1,7 +1,7 @@
 import logging
 import os
 import tarfile
-from io import StringIO
+from io import BytesIO
 from typing import IO, Generator, Optional
 
 import sentry_sdk
@@ -38,22 +38,29 @@ def lambda_handler(event: dict, context: object) -> dict:
     return {"files_processed": file_count}
 
 
-def add_namespaces_to_alma_marcxml(xml_file: IO[bytes]) -> StringIO:
+def add_namespaces_to_alma_marcxml(xml_file: IO[bytes]) -> BytesIO:
     collection_element_with_namespaces = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<collection xmlns="http://www.loc.gov/MARC21/slim" '
         'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" '
         'xsi:schemaLocation="http://www.loc.gov/MARC21/slim '
-        'http://www.loc.gov/standards/marcxml/schema/MARC21slim.xsd"><'
+        'http://www.loc.gov/standards/marcxml/schema/MARC21slim.xsd">'
     )
-    xml_string = StringIO()
-    xml_line = xml_file.read(52)
-    if xml_line == b'<?xml version="1.0" encoding="UTF-8"?>\n<collection><':
-        xml_string.write(collection_element_with_namespaces)
-        xml_file.seek(52)
-        xml_string.write(xml_file.read().decode("utf-8"))
-        xml_string.seek(0)
-    return xml_string
+    output = BytesIO()
+    first_chunk = xml_file.read(51)
+    decoded = first_chunk.decode("utf-8")
+    if decoded != '<?xml version="1.0" encoding="UTF-8"?>\n<collection>':
+        raise ValueError(
+            "XML file does not have expected XML declaration or collection element"
+        )
+    output.write(collection_element_with_namespaces.encode())
+    while True:
+        chunk = xml_file.read(16384)
+        if not chunk:
+            break
+        output.write(chunk)
+    output.seek(0)
+    return output
 
 
 def extract_files_from_tar(
