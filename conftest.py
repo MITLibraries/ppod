@@ -21,22 +21,31 @@ def request_data_matching_file():
 @pytest.fixture(scope="session")
 def mocked_s3(aws_credentials):
     with mock_s3():
-        s3 = boto3.client("s3", region_name="us-east-1")
-        s3.create_bucket(Bucket="ppod")
-        s3.put_object(
-            Body=open("fixtures/pod.tar.gz", "rb"),
-            Bucket="ppod",
-            Key="upload/pod.tar.gz",
-        )
-        s3.create_bucket(Bucket="no_files")
-        s3.create_bucket(Bucket="a_lot_of_files")
-        for i in range(1001):
+        with open("fixtures/pod.tar.gz", "rb") as pod_tar, open(
+            "fixtures/empty.tar.gz", "rb"
+        ) as empty_tar:
+            s3 = boto3.client("s3", region_name="us-east-1")
+            s3.create_bucket(Bucket="ppod")
             s3.put_object(
-                Body=str(i),
-                Bucket="a_lot_of_files",
-                Key=f"upload/{i}.txt",
+                Body=pod_tar,
+                Bucket="ppod",
+                Key="upload/pod.tar.gz",
             )
-        yield s3
+            s3.create_bucket(Bucket="empty_tar")
+            s3.put_object(
+                Body=empty_tar,
+                Bucket="empty_tar",
+                Key="upload/empty.tar.gz",
+            )
+            s3.create_bucket(Bucket="no_files")
+            s3.create_bucket(Bucket="a_lot_of_files")
+            for i in range(1001):
+                s3.put_object(
+                    Body=str(i),
+                    Bucket="a_lot_of_files",
+                    Key=f"upload/{i}.txt",
+                )
+            yield s3
 
 
 @pytest.fixture(autouse=True)

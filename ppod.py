@@ -1,6 +1,7 @@
 import logging
 import os
 import tarfile
+from io import BytesIO
 from typing import IO, Generator, Optional
 
 import sentry_sdk
@@ -25,12 +26,41 @@ def lambda_handler(event: dict, context: object) -> dict:
     )
     for s3_file in s3_files:
         logger.info("Processing file: %s", s3_file)
-        s3_file_content = smart_open.open(f"s3://{bucket}/{s3_file}", "rb")
-        files = extract_files_from_tar(s3_file_content)
-        for file in files:
-            file  # do a thing
-            file_count += 1
-    return {"files-processed": file_count}
+        with smart_open.open(f"s3://{bucket}/{s3_file}", "rb") as s3_file_content:
+            xml_files = extract_files_from_tar(s3_file_content)
+            for xml_file in xml_files:
+                if xml_file:
+                    add_namespaces_to_alma_marcxml(xml_file)
+                    # post modified_xml to POD
+                    file_count += 1
+                else:
+                    raise ValueError(f"No files extracted from {s3_file}")
+    return {"files_processed": file_count}
+
+
+def add_namespaces_to_alma_marcxml(xml_file: IO[bytes]) -> BytesIO:
+    collection_element_with_namespaces = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<collection xmlns="http://www.loc.gov/MARC21/slim" '
+        'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" '
+        'xsi:schemaLocation="http://www.loc.gov/MARC21/slim '
+        'http://www.loc.gov/standards/marcxml/schema/MARC21slim.xsd">'
+    )
+    output = BytesIO()
+    first_chunk = xml_file.read(51)
+    decoded = first_chunk.decode("utf-8")
+    if decoded != '<?xml version="1.0" encoding="UTF-8"?>\n<collection>':
+        raise ValueError(
+            "XML file does not have expected XML declaration or collection element"
+        )
+    output.write(collection_element_with_namespaces.encode())
+    while True:
+        chunk = xml_file.read(16384)
+        if not chunk:
+            break
+        output.write(chunk)
+    output.seek(0)
+    return output
 
 
 def extract_files_from_tar(
