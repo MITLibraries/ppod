@@ -2,6 +2,7 @@ import os
 
 import boto3
 import pytest
+import requests_mock
 from moto import mock_s3
 
 
@@ -16,6 +17,20 @@ def aws_credentials():
 def request_data_matching_file():
     request_data = {"filename-prefix": "upload/"}
     yield request_data
+
+
+@pytest.fixture()
+def mocked_pod():
+    with requests_mock.Mocker() as m, open(
+        "fixtures/pod_response.html", "r"
+    ) as pod_response:
+        request_headers = {"Authorization": "Bearer 1234abcd"}
+        m.post(
+            "http://example.example/organizations/ORG/uploads?stream=default",
+            text=pod_response.read(),
+            request_headers=request_headers,
+        )
+        yield m
 
 
 @pytest.fixture(scope="session")
@@ -50,5 +65,11 @@ def mocked_s3(aws_credentials):
 
 @pytest.fixture(autouse=True)
 def test_env():
-    os.environ = {"WORKSPACE": "test", "BUCKET": "ppod"}
+    os.environ = {
+        "ACCESS_TOKEN": "1234abcd",
+        "BUCKET": "ppod",
+        "POD_URL": "http://example.example/organizations/ORG/uploads?stream=",
+        "STREAM": "default",
+        "WORKSPACE": "test",
+    }
     yield

@@ -7,6 +7,8 @@ name = "pypi"
 boto3 = "*"
 sentry-sdk = "*"
 smart-open = "*"
+requests = "*"
+types-requests = "*"
 
 [dev-packages]
 bandit = "*"
@@ -17,6 +19,7 @@ isort = "*"
 moto = "*"
 mypy = "*"
 pytest = "*"
+requests-mock = "*"
 
 [requires]
 python_version = "3.9"

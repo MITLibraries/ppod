@@ -17,9 +17,15 @@ make lint
 ```
 
 ## Required ENV
+`ACCESS_TOKEN` : The POD access token used to authenticate uploads. The access tokens can be found on the `Manage Organization` page.
+
 `BUCKET` = The bucket containing the compressed MARCXML files to be submitted to POD.
 
+`POD_URL` =  The POD URL which includes the organization code: `https://pod.stanford.edu/organizations/{Organization Code}/uploads?stream=`
+
 `SENTRY_DSN` = If set to a valid Sentry DSN, enables Sentry exception monitoring. This is not needed for local development.
+
+`STREAM` = The POD stream to use when posting MARCXML records.
 
 `WORKSPACE` = Set to `dev` for local development, this will be set to `stage` and `prod` in those environments by Terraform.
 
