@@ -4,6 +4,7 @@ import tarfile
 from io import BytesIO
 from typing import IO, Generator, Optional
 
+import requests
 import sentry_sdk
 import smart_open
 from boto3 import client
@@ -18,8 +19,16 @@ def lambda_handler(event: dict, context: object) -> dict:
         logger.info(
             "Sentry DSN found, exceptions will be sent to Sentry with env=%s", env
         )
-    file_count = 0
+
     bucket = os.environ["BUCKET"]
+    ssm_client = client("ssm", region_name="us-east-1")
+    stream = ssm_client.get_parameter(Name="/apps/ppod/stream-name")["Parameter"][
+        "Value"
+    ]
+    pod_url = os.environ["POD_URL"] + stream
+    pod_headers = {"Authorization": f'Bearer {os.environ["POD_ACCESS_TOKEN"]}'}
+
+    file_count = 0
     s3_files = filter_files_in_bucket(
         bucket,
         event["filename-prefix"],
@@ -30,8 +39,16 @@ def lambda_handler(event: dict, context: object) -> dict:
             xml_files = extract_files_from_tar(s3_file_content)
             for xml_file in xml_files:
                 if xml_file:
-                    add_namespaces_to_alma_marcxml(xml_file)
-                    # post modified_xml to POD
+                    modified_xml = add_namespaces_to_alma_marcxml(xml_file)
+                    pod_file_name = os.path.basename(s3_file).replace("tar.gz", "xml")
+                    response = post_file_to_pod(
+                        pod_url, pod_headers, pod_file_name, modified_xml
+                    )
+                    logger.info(
+                        "Submited file %s and received response: %s",
+                        pod_file_name,
+                        response,
+                    )
                     file_count += 1
                 else:
                     raise ValueError(f"No files extracted from {s3_file}")
@@ -84,3 +101,23 @@ def filter_files_in_bucket(bucket: str, prefix: str) -> Generator[str, None, Non
             yield s3_object["Key"]
     except KeyError:
         raise KeyError(f"No files retrieved from {bucket} with prefix {prefix}")
+
+
+def post_file_to_pod(
+    url: str, headers: dict, pod_file_name: str, file_content: BytesIO
+) -> requests.Response:
+    """Post file content to POD with the specified file name."""
+    files = {
+        "upload[files][]": (
+            pod_file_name,
+            file_content,
+            "application/marcxml+xml",
+        ),
+    }
+    response = requests.post(
+        url,
+        headers=headers,
+        files=files,
+    )
+    response.raise_for_status()
+    return response
