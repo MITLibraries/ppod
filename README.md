@@ -45,6 +45,8 @@ Use the `Test` tab on the lambda to `Event JSON` that will match files in the de
 }
 ```
 
+Note: If it's been a while since the last POD export from Alma sandbox, there may be no files in the Dev1 S3 export bucket and you may need to run the publishing job from the sandbox.
+
 
 Observe that the output reflects the correct number of files:
 
