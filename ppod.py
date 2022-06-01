@@ -21,8 +21,12 @@ def lambda_handler(event: dict, context: object) -> dict:
         )
 
     bucket = os.environ["BUCKET"]
-    url = os.environ["POD_URL"] + os.environ["STREAM"]
-    headers = {"Authorization": f'Bearer {os.environ["ACCESS_TOKEN"]}'}
+    ssm_client = client("ssm", region_name="us-east-1")
+    stream = ssm_client.get_parameter(
+        Name="/apps/ppod/stream-name", WithDecryption=True
+    )["Parameter"]["Value"]
+    pod_url = os.environ["POD_URL"] + stream
+    pod_headers = {"Authorization": f'Bearer {os.environ["ACCESS_TOKEN"]}'}
 
     file_count = 0
     s3_files = filter_files_in_bucket(
@@ -37,10 +41,14 @@ def lambda_handler(event: dict, context: object) -> dict:
                 if xml_file:
                     modified_xml = add_namespaces_to_alma_marcxml(xml_file)
                     pod_file_name = os.path.basename(s3_file).replace("tar.gz", "xml")
-                    response = post_files_to_pod(
-                        url, headers, pod_file_name, modified_xml
+                    response = post_file_to_pod(
+                        pod_url, pod_headers, pod_file_name, modified_xml
                     )
-                    logger.info("%s: %s", pod_file_name, response)
+                    logger.info(
+                        "Submited file %s and received response: %s",
+                        pod_file_name,
+                        response,
+                    )
                     file_count += 1
                 else:
                     raise ValueError(f"No files extracted from {s3_file}")
@@ -95,7 +103,7 @@ def filter_files_in_bucket(bucket: str, prefix: str) -> Generator[str, None, Non
         raise KeyError(f"No files retrieved from {bucket} with prefix {prefix}")
 
 
-def post_files_to_pod(
+def post_file_to_pod(
     url: str, headers: dict, pod_file_name: str, file_content: BytesIO
 ) -> requests.Response:
     """Post file content to POD with the specified file name."""
@@ -103,7 +111,7 @@ def post_files_to_pod(
         "upload[files][]": (
             pod_file_name,
             file_content,
-            "application/xml",
+            "application/marcxml+xml",
         ),
     }
     response = requests.post(

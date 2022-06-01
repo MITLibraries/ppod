@@ -8,7 +8,6 @@ boto3 = "*"
 sentry-sdk = "*"
 smart-open = "*"
 requests = "*"
-types-requests = "*"
 
 [dev-packages]
 bandit = "*"
@@ -20,6 +19,7 @@ moto = "*"
 mypy = "*"
 pytest = "*"
 requests-mock = "*"
+types-requests = "*"
 
 [requires]
 python_version = "3.9"
