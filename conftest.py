@@ -25,7 +25,7 @@ def marcxml_with_namespaces():
         yield marcxml_with_namespaces
 
 
-@pytest.fixture()
+@pytest.fixture(autouse=True, scope="session")
 def mocked_pod():
     with requests_mock.Mocker() as m:
         request_headers = {"Authorization": "Bearer 1234abcd"}
@@ -40,7 +40,7 @@ def mocked_pod():
         yield m
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(autouse=True, scope="session")
 def mocked_s3(aws_credentials):
     with mock_s3():
         with open("fixtures/marc.tar.gz", "rb") as pod_tar, open(
@@ -70,7 +70,7 @@ def mocked_s3(aws_credentials):
             yield s3
 
 
-@pytest.fixture()
+@pytest.fixture(autouse=True, scope="session")
 def mocked_ssm():
     with mock_ssm():
         ssm = boto3.client("ssm", region_name="us-east-1")
@@ -89,7 +89,7 @@ def request_data_matching_file():
 @pytest.fixture(autouse=True)
 def test_env():
     os.environ = {
-        "ACCESS_TOKEN": "1234abcd",
+        "POD_ACCESS_TOKEN": "1234abcd",
         "BUCKET": "ppod",
         "POD_URL": "http://example.example/organizations/ORG/uploads?stream=",
         "WORKSPACE": "test",

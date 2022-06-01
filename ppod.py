@@ -22,11 +22,11 @@ def lambda_handler(event: dict, context: object) -> dict:
 
     bucket = os.environ["BUCKET"]
     ssm_client = client("ssm", region_name="us-east-1")
-    stream = ssm_client.get_parameter(
-        Name="/apps/ppod/stream-name", WithDecryption=True
-    )["Parameter"]["Value"]
+    stream = ssm_client.get_parameter(Name="/apps/ppod/stream-name")["Parameter"][
+        "Value"
+    ]
     pod_url = os.environ["POD_URL"] + stream
-    pod_headers = {"Authorization": f'Bearer {os.environ["ACCESS_TOKEN"]}'}
+    pod_headers = {"Authorization": f'Bearer {os.environ["POD_ACCESS_TOKEN"]}'}
 
     file_count = 0
     s3_files = filter_files_in_bucket(
