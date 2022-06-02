@@ -1,6 +1,10 @@
 SHELL=/bin/bash
 DATETIME:=$(shell date -u +%Y%m%dT%H%M%SZ)
-ECR_REGISTRY_DEV=$(shell aws sts get-caller-identity --query Account --output text).dkr.ecr.us-east-1.amazonaws.com
+### This is the Terraform-generated header for ppod-dev
+ECR_NAME_DEV:=ppod-dev
+ECR_URL_DEV:=222053980223.dkr.ecr.us-east-1.amazonaws.com/ppod-dev
+FUNCTION_DEV:=ppod-dev
+### End of Terraform-generated header ###
 
 help: ## Print this message
 	@awk 'BEGIN { FS = ":.*##"; print "Usage:  make <target>\n\nTargets:" } \
@@ -41,19 +45,19 @@ isort:
 mypy:
 	pipenv run mypy .
 
-### Container commands ###
-dist-dev: ## Build docker container
+### Developer Deploy Commands ###
+dist-dev: ## Build docker container (intended for developer-based manual build)
 	docker build --platform linux/amd64 \
-		-t $(ECR_REGISTRY_DEV)/ppod-dev:latest \
-		-t $(ECR_REGISTRY_DEV)/ppod-dev:`git describe --always` \
-		-t ppod-dev:latest .
+	    -t $(ECR_URL_DEV):latest \
+		-t $(ECR_URL_DEV):`git describe --always` \
+		-t $(ECR_NAME_DEV):latest .
 
-publish-dev: dist-dev ## Build, tag and push
-	docker login -u AWS -p $$(aws ecr get-login-password --region us-east-1) $(ECR_REGISTRY_DEV)
-	docker push $(ECR_REGISTRY_DEV)/ppod-dev:latest
-	docker push $(ECR_REGISTRY_DEV)/ppod-dev:`git describe --always`
+publish-dev: dist-dev ## Build, tag and push (intended for developer-based manual publish)
+	docker login -u AWS -p $$(aws ecr get-login-password --region us-east-1) $(ECR_URL_DEV)
+	docker push $(ECR_URL_DEV):latest
+	docker push $(ECR_URL_DEV):`git describe --always`
 
-update-lambda-dev: ## Updates the lambda with whatever is the most recent image in the ecr
+update-lambda-dev: ## Updates the lambda with whatever is the most recent image in the ecr (intended for developer-based manual update)
 	aws lambda update-function-code \
-		--function-name ppod-dev \
-		--image-uri $(shell aws sts get-caller-identity --query Account --output text).dkr.ecr.us-east-1.amazonaws.com/ppod-dev:latest
+		--function-name $(FUNCTION_DEV) \
+		--image-uri $(ECR_URL_DEV):latest
