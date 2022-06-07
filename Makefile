@@ -5,6 +5,11 @@ ECR_NAME_DEV:=ppod-dev
 ECR_URL_DEV:=222053980223.dkr.ecr.us-east-1.amazonaws.com/ppod-dev
 FUNCTION_DEV:=ppod-dev
 ### End of Terraform-generated header ###
+### This is the Terraform-generated Makefile header for ppod-stage
+ECR_NAME_STAGE:=ppod-stage
+ECR_URL_STAGE:=840055183494.dkr.ecr.us-east-1.amazonaws.com/ppod-stage
+FUNCTION_STAGE:=ppod-stage
+### End of Terraform-generated header ###
 
 help: ## Print this message
 	@awk 'BEGIN { FS = ":.*##"; print "Usage:  make <target>\n\nTargets:" } \
@@ -61,3 +66,20 @@ update-lambda-dev: ## Updates the lambda with whatever is the most recent image 
 	aws lambda update-function-code \
 		--function-name $(FUNCTION_DEV) \
 		--image-uri $(ECR_URL_DEV):latest
+
+### Terraform-generated Makefile developer Deploy Commands ###
+dist-stage: ## Build docker container (intended for developer-based manual build)
+	docker build --platform linux/amd64 \
+	    -t $(ECR_URL_STAGE):latest \
+		-t $(ECR_URL_STAGE):`git describe --always` \
+		-t $(ECR_NAME_STAGE):latest .
+
+publish-stage: dist-stage ## Build, tag and push (intended for developer-based manual publish)
+	docker login -u AWS -p $$(aws ecr get-login-password --region us-east-1) $(ECR_URL_STAGE)
+	docker push $(ECR_URL_STAGE):latest
+	docker push $(ECR_URL_STAGE):`git describe --always`
+
+update-lambda-stage: ## Updates the lambda with whatever is the most recent image in the ecr (intended for developer-based manual update)
+	aws lambda update-function-code \
+		--function-name $(FUNCTION_STAGE) \
+		--image-uri $(ECR_URL_STAGE):latest
