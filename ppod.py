@@ -51,7 +51,7 @@ def lambda_handler(event: dict, context: object) -> dict:
                     )
                     file_count += 1
                 else:
-                    raise ValueError(f"No files extracted from {s3_file}")
+                    raise ValueError(f"No files extracted from tarfile: {s3_file}")
     return {"files_processed": file_count}
 
 
@@ -100,7 +100,9 @@ def filter_files_in_bucket(bucket: str, prefix: str) -> Generator[str, None, Non
         ):
             yield s3_object["Key"]
     except KeyError:
-        raise KeyError(f"No files retrieved from {bucket} with prefix {prefix}")
+        raise KeyError(
+            f"No files retrieved from bucket '{bucket}' with prefix '{prefix}'"
+        )
 
 
 def post_file_to_pod(
