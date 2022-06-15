@@ -11,7 +11,7 @@ on:
 jobs:
   deploy:
     name: Stage Deploy Lambda Container
-    uses: mitlibraries/.github/.github/workflows/lambda-shared-deploy-stage.yml@container-flows
+    uses: mitlibraries/.github/.github/workflows/lambda-shared-deploy-stage.yml@main
     secrets: inherit
     with:
       AWS_REGION: "us-east-1"
