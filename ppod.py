@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import tarfile
@@ -8,17 +9,31 @@ import requests
 import sentry_sdk
 import smart_open
 from boto3 import client
+from sentry_sdk.integrations.aws_lambda import AwsLambdaIntegration
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+
+env = os.getenv("WORKSPACE")
+if sentry_dsn := os.getenv("SENTRY_DSN"):
+    sentry = sentry_sdk.init(
+        dsn=sentry_dsn,
+        environment=env,
+        integrations=[
+            AwsLambdaIntegration(),
+        ],
+        traces_sample_rate=1.0,
+    )
+    logger.info("Sentry DSN found, exceptions will be sent to Sentry with env=%s", env)
+else:
+    logger.info("No Sentry DSN found, exceptions will not be sent to Sentry")
 
 
 def lambda_handler(event: dict, context: object) -> dict:
-    logger = logging.getLogger(__name__)
-    logging.basicConfig(level=logging.INFO)
-    env = os.environ["WORKSPACE"]
-    if sentry_dsn := os.getenv("SENTRY_DSN"):
-        sentry_sdk.init(sentry_dsn, environment=env)
-        logger.info(
-            "Sentry DSN found, exceptions will be sent to Sentry with env=%s", env
-        )
+    logger.debug(json.dumps(event))
+
+    if not os.getenv("WORKSPACE"):
+        raise RuntimeError("Required env variable WORKSPACE is not set")
 
     bucket = os.environ["BUCKET"]
     ssm_client = client("ssm", region_name="us-east-1")

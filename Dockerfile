@@ -2,7 +2,6 @@ FROM public.ecr.aws/lambda/python:3.9
 
 # Copy function code
 COPY . ${LAMBDA_TASK_ROOT}/
-COPY . ${LAMBDA_TASK_ROOT}/
 
 # Install dependencies
 RUN pip3 install pipenv
