@@ -1,8 +1,9 @@
-import logging
+from importlib import reload
 
 import pytest
 import requests
 
+import ppod
 from ppod import (
     add_namespaces_to_alma_marcxml,
     extract_files_from_tar,
@@ -12,25 +13,26 @@ from ppod import (
 )
 
 
-def test_ppod_configures_sentry_if_dsn_present(
-    caplog, monkeypatch, request_data_matching_file
-):
+def test_ppod_configures_sentry_if_dsn_present(caplog, monkeypatch):
     monkeypatch.setenv("SENTRY_DSN", "https://1234567890@00000.ingest.sentry.io/123456")
-    caplog.set_level(logging.INFO)
-    lambda_handler(request_data_matching_file, {})
+    reload(ppod)
     assert (
         "Sentry DSN found, exceptions will be sent to Sentry with env=test"
         in caplog.text
     )
 
 
-def test_ppod_doesnt_configure_sentry_if_dsn_not_present(
-    caplog, monkeypatch, request_data_matching_file
-):
+def test_ppod_doesnt_configure_sentry_if_dsn_not_present(caplog, monkeypatch):
     monkeypatch.delenv("SENTRY_DSN", raising=False)
-    caplog.set_level(logging.INFO)
-    lambda_handler(request_data_matching_file, {})
-    assert "Sentry DSN found" not in caplog.text
+    reload(ppod)
+    assert "No Sentry DSN found, exceptions will not be sent to Sentry" in caplog.text
+
+
+def test_ppod_missing_workspace_env_raises_error(monkeypatch):
+    monkeypatch.delenv("WORKSPACE", raising=False)
+    with pytest.raises(RuntimeError) as e:
+        lambda_handler({}, {})
+    assert "Required env variable WORKSPACE is not set" in str(e)
 
 
 def test_ppod_matching_files(request_data_matching_file):
