@@ -1,5 +1,8 @@
 ### This is the Terraform-generated dev-build.yml workflow for the ppod-dev app repository ###
-name: Dev Build and Deploy lambda Container
+### If this is a Lambda repo, uncomment the FUNCTION line at the end of the document     ###
+### If the container requires any additional pre-build commands, uncomment and edit      ###
+### the PREBUILD line at the end of the document.                                        ###
+name: Dev Container Build and Deploy
 on:
   workflow_dispatch:
   pull_request:
@@ -10,11 +13,12 @@ on:
 
 jobs:
   deploy:
-    name: Dev Deploy lambda Container
-    uses: mitlibraries/.github/.github/workflows/lambda-shared-deploy-dev.yml@main
+    name: Dev Container Deploy
+    uses: mitlibraries/.github/.github/workflows/ecr-shared-deploy-dev.yml@main
     secrets: inherit
     with:
       AWS_REGION: "us-east-1"
       GHA_ROLE: "ppod-gha-dev"
       ECR: "ppod-dev"
       FUNCTION: "ppod-dev"
+      # PREBUILD: 
