@@ -1,5 +1,6 @@
-### This is the Terraform-generated prod-promote.yml workflow for the ppod-prod app repository ###
-name: Prod Promote Lambda Container
+### This is the Terraform-generated prod-promote.yml workflow for the ppod-prod repository. ###
+### If this is a Lambda repo, uncomment the FUNCTION line at the end of the document.         ###
+name: Prod Container Promote
 on:
   workflow_dispatch:
   release:
@@ -7,8 +8,8 @@ on:
 
 jobs:
   deploy:
-    name: Prod Promote Lambda Container
-    uses: mitlibraries/.github/.github/workflows/lambda-shared-promote-prod.yml@main
+    name: Prod Container Promote
+    uses: mitlibraries/.github/.github/workflows/ecr-shared-promote-prod.yml@main
     secrets: inherit
     with:
       AWS_REGION: "us-east-1"
